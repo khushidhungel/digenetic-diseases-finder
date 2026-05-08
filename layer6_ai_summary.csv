@@ -1,0 +1,11 @@
+rank,gene_a,gene_b,digenic_score,source,interpretation
+1,BBS9,BBS4,100.0,MyGene.info + ClinVar,"GENE PROFILES (MyGene.info + ClinVar)
+BBS9: This gene is downregulated by parathyroid hormone in osteoblastic cells, and therefore is thought to be involved in parathyroid hormone action in bones. The exact function of this gene has not yet been determined. Alternatively spliced transcript variants ..."
+2,BBS2,BBS4,97.52,MyGene.info + ClinVar,"GENE PROFILES (MyGene.info + ClinVar)
+BBS2: This gene is a member of the Bardet-Biedl syndrome (BBS) gene family. Bardet-Biedl syndrome is an autosomal recessive disorder characterized by severe pigmentary retinopathy, obesity, polydactyly, renal malformation and cognitive disability. The proteins e..."
+3,BBS7,BBS4,92.2,MyGene.info + ClinVar,"GENE PROFILES (MyGene.info + ClinVar)
+BBS7: This gene encodes one of eight proteins that form the BBSome complex containing BBS1, BBS2, BBS4, BBS5, BBS7, BBS8, BBS9 and BBIP10. The BBSome complex is believed to recruit Rab8(GTP) to the primary cilium and promote ciliogenesis. The BBSome complex asse..."
+4,BBS2,BBS7,76.91,MyGene.info + ClinVar,"GENE PROFILES (MyGene.info + ClinVar)
+BBS2: This gene is a member of the Bardet-Biedl syndrome (BBS) gene family. Bardet-Biedl syndrome is an autosomal recessive disorder characterized by severe pigmentary retinopathy, obesity, polydactyly, renal malformation and cognitive disability. The proteins e..."
+5,BBS9,BBS2,69.51,MyGene.info + ClinVar,"GENE PROFILES (MyGene.info + ClinVar)
+BBS9: This gene is downregulated by parathyroid hormone in osteoblastic cells, and therefore is thought to be involved in parathyroid hormone action in bones. The exact function of this gene has not yet been determined. Alternatively spliced transcript variants ..."
