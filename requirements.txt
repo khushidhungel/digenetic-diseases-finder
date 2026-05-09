@@ -1,0 +1,10 @@
+streamlit
+pandas
+numpy
+networkx
+plotly
+requests
+seaborn
+matplotlib
+python-dotenv
+google-generativeai
