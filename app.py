@@ -579,11 +579,27 @@ elif "🌍" in page:
         with st.spinner(f"Fetching '{disease_input}'..."):
             try:
                 r   = requests.post("https://api.platform.opentargets.org/api/v4/graphql",
-                    json={"query": """query S($q:String!){search(queryString:$q,entityNames:["disease"]){hits{id name}}}""",
-                          "variables": {"q": disease_input}}, timeout=15,
-                    headers={"Content-Type":"application/json"})
-                hit = r.json()["data"]["search"]["hits"][0]
-                disease_id, found_name = hit["id"], hit["name"]
+    json={"query": """
+        query SearchDisease($q: String!) {
+            search(queryString: $q, entityNames: ["disease"]) {
+                hits {
+                    id
+                    name
+                    entity
+                }
+            }
+        }
+    """,
+          "variables": {"q": disease_input}}, timeout=15,
+    headers={"Content-Type":"application/json"})
+data = r.json()
+hits = data.get("data", {}).get("search", {}).get("hits", [])
+if not hits:
+    st.error("Disease not found — try different name")
+    disease_id = None
+else:
+    hit = hits[0]
+    disease_id, found_name = hit["id"], hit["name"]
             except:
                 st.error("Disease not found — try different name")
                 disease_id = None
