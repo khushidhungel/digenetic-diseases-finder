@@ -140,13 +140,13 @@ div[data-testid="stRadio"] label:has(input:checked) {
 def load_data():
     base  = os.path.dirname(os.path.abspath(__file__))
     files = {
-        "genes":       "outputs/layer1_bbs_genes.csv",
-        "constrained": "outputs/layer2_constrained_genes.csv",
-        "interactions":"outputs/layer3_interactions.csv",
-        "pathways":    "outputs/layer4_pathway_scores.csv",
-        "clinvar":     "outputs/layer4b_clinvar_scores.csv",
-        "scores":      "outputs/layer5_digenic_scores.csv",
-    }
+    "genes":       "layer1_bbs_genes.csv",
+    "constrained": "layer2_constrained_genes.csv",
+    "interactions":"layer3_interactions.csv",
+    "pathways":    "layer4_pathway_scores.csv",
+    "clinvar":     "layer4b_clinvar_scores.csv",
+    "scores":      "layer5_digenic_scores.csv",
+}
     data = {}
     for key, rel in files.items():
         path = os.path.join(base, rel)
@@ -156,7 +156,7 @@ def load_data():
 @st.cache_data
 def load_ai():
     base = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(base, "outputs/layer6_ai_interpretations.txt")
+    path = os.path.join(base, "layer6_ai_interpretations.txt")
     return open(path, encoding="utf-8").read() if os.path.exists(path) else None
 
 data      = load_data()
