@@ -563,11 +563,13 @@ elif "🌍" in page:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
     col_s1, col_s2 = st.columns([3,1])
     with col_s1:
         disease_input = st.text_input("Disease name:", placeholder="e.g. Joubert syndrome, Usher syndrome...", label_visibility="collapsed")
     with col_s2:
         search_btn = st.button("🔍 Search", use_container_width=True)
+
     st.markdown("<div style='font-size:0.72rem;color:#475569;margin-bottom:6px;'>Quick search:</div>", unsafe_allow_html=True)
     qcols = st.columns(5)
     for i, qd in enumerate(["Joubert syndrome","Usher syndrome","Alström syndrome","Meckel syndrome","NPHP"]):
@@ -575,91 +577,170 @@ elif "🌍" in page:
             if st.button(qd, use_container_width=True, key=f"q{i}"):
                 disease_input = qd
                 search_btn    = True
+
     if search_btn and disease_input:
         with st.spinner(f"Fetching '{disease_input}'..."):
+            disease_id = None
+            found_name = ""
             try:
-                r   = requests.post("https://api.platform.opentargets.org/api/v4/graphql",
-    json={"query": """
-        query SearchDisease($q: String!) {
-            search(queryString: $q, entityNames: ["disease"]) {
-                hits {
-                    id
-                    name
-                    entity
+                search_query = """
+                query SearchDisease($q: String!) {
+                    search(queryString: $q, entityNames: ["disease"]) {
+                        hits {
+                            id
+                            name
+                            entity
+                        }
+                    }
                 }
-            }
-        }
-    """,
-          "variables": {"q": disease_input}}, timeout=15,
-    headers={"Content-Type":"application/json"})
-data = r.json()
-hits = data.get("data", {}).get("search", {}).get("hits", [])
-if not hits:
-    st.error("Disease not found — try different name")
-    disease_id = None
-else:
-    hit = hits[0]
-    disease_id, found_name = hit["id"], hit["name"]
-            except:
-                st.error("Disease not found — try different name")
-                disease_id = None
+                """
+                r    = requests.post(
+                    "https://api.platform.opentargets.org/api/v4/graphql",
+                    json={"query": search_query, "variables": {"q": disease_input}},
+                    timeout=15,
+                    headers={"Content-Type": "application/json"}
+                )
+                hits = r.json().get("data", {}).get("search", {}).get("hits", [])
+                if hits:
+                    disease_id = hits[0]["id"]
+                    found_name = hits[0]["name"]
+                else:
+                    st.error("Disease not found — try a different name")
+            except Exception as e:
+                st.error(f"Search failed: {e}")
+
             if disease_id:
+                genes = []
                 try:
-                    r2   = requests.post("https://api.platform.opentargets.org/api/v4/graphql",
-                        json={"query": """query G($id:String!,$n:Int!){disease(efoId:$id){associatedTargets(page:{index:0,size:$n}){rows{target{approvedSymbol approvedName}score}}}}""",
-                              "variables": {"id": disease_id, "n": 15}}, timeout=15,
-                        headers={"Content-Type":"application/json"})
+                    gene_query = """
+                    query DiseaseGenes($id: String!, $n: Int!) {
+                        disease(efoId: $id) {
+                            associatedTargets(page: {index: 0, size: $n}) {
+                                rows {
+                                    target {
+                                        approvedSymbol
+                                        approvedName
+                                    }
+                                    score
+                                }
+                            }
+                        }
+                    }
+                    """
+                    r2   = requests.post(
+                        "https://api.platform.opentargets.org/api/v4/graphql",
+                        json={"query": gene_query, "variables": {"id": disease_id, "n": 15}},
+                        timeout=15,
+                        headers={"Content-Type": "application/json"}
+                    )
                     rows  = r2.json()["data"]["disease"]["associatedTargets"]["rows"]
-                    genes = [{"gene_symbol":row["target"]["approvedSymbol"],"gene_name":row["target"]["approvedName"],"ot_score":round(row["score"],3)} for row in rows if row["score"]>=0.3]
-                except:
-                    genes = []
+                    genes = [
+                        {
+                            "gene_symbol": row["target"]["approvedSymbol"],
+                            "gene_name":   row["target"]["approvedName"],
+                            "ot_score":    round(row["score"], 3)
+                        }
+                        for row in rows if row["score"] >= 0.3
+                    ]
+                except Exception as e:
+                    st.error(f"Gene fetch failed: {e}")
+
                 if genes:
                     gene_symbols = [g["gene_symbol"] for g in genes]
+                    interactions = []
                     try:
-                        r3 = requests.get(f"https://string-db.org/api/json/network?identifiers={'%0d'.join(gene_symbols)}&species=9606&required_score=700&caller_identity=bbs_digenic", timeout=20)
-                        interactions = [{"gene_a":i["preferredName_A"],"gene_b":i["preferredName_B"],"score":int(i["score"]*1000)} for i in r3.json()] if r3.status_code==200 else []
+                        r3 = requests.get(
+                            f"https://string-db.org/api/json/network"
+                            f"?identifiers={'%0d'.join(gene_symbols)}"
+                            f"&species=9606&required_score=700"
+                            f"&caller_identity=bbs_digenic",
+                            timeout=20
+                        )
+                        if r3.status_code == 200:
+                            interactions = [
+                                {
+                                    "gene_a": item["preferredName_A"],
+                                    "gene_b": item["preferredName_B"],
+                                    "score":  int(item["score"] * 1000)
+                                }
+                                for item in r3.json()
+                            ]
                     except:
                         interactions = []
-                    m1,m2,m3 = st.columns(3)
+
+                    m1, m2, m3 = st.columns(3)
                     with m1: st.markdown(f"<div class='metric-box'><div class='metric-value'>{len(genes)}</div><div class='metric-label'>Genes</div></div>", unsafe_allow_html=True)
                     with m2: st.markdown(f"<div class='metric-box'><div class='metric-value' style='color:#6366f1;'>{len(interactions)}</div><div class='metric-label'>Interactions</div></div>", unsafe_allow_html=True)
-                    with m3: st.markdown(f"<div class='metric-box'><div class='metric-value' style='color:#f59e0b;font-size:0.9rem;'>{found_name[:20]}</div><div class='metric-label'>Disease</div></div>", unsafe_allow_html=True)
-                    tab1, tab2 = st.tabs(["🕸️ Network","📋 Genes"])
+                    with m3: st.markdown(f"<div class='metric-box'><div class='metric-value' style='color:#f59e0b;font-size:0.85rem;'>{found_name[:25]}</div><div class='metric-label'>Disease Found</div></div>", unsafe_allow_html=True)
+
+                    tab1, tab2 = st.tabs(["🕸️ Network", "📋 Genes"])
+
                     with tab1:
                         if interactions:
                             G = nx.Graph()
-                            for g in gene_symbols: G.add_node(g)
+                            for g in gene_symbols:
+                                G.add_node(g)
                             for inter in interactions:
                                 if inter["gene_a"] in G and inter["gene_b"] in G:
-                                    G.add_edge(inter["gene_a"],inter["gene_b"],weight=inter["score"])
-                            pos  = nx.spring_layout(G,seed=42,k=2.5)
-                            ex,ey = [],[]
-                            for u,v in G.edges():
-                                x0,y0=pos[u]; x1,y1=pos[v]; ex+=[x0,x1,None]; ey+=[y0,y1,None]
+                                    G.add_edge(inter["gene_a"], inter["gene_b"], weight=inter["score"])
+
+                            pos   = nx.spring_layout(G, seed=42, k=2.5)
+                            ex, ey = [], []
+                            for u, v in G.edges():
+                                x0,y0 = pos[u]
+                                x1,y1 = pos[v]
+                                ex += [x0, x1, None]
+                                ey += [y0, y1, None]
+
                             fig = go.Figure()
-                            fig.add_trace(go.Scatter(x=ex,y=ey,mode="lines",line=dict(width=1.5,color="#6366f1"),opacity=0.4,hoverinfo="none"))
-                            fig.add_trace(go.Scatter(x=[pos[n][0] for n in G.nodes()],y=[pos[n][1] for n in G.nodes()],mode="markers+text",
-                                marker=dict(size=[18+G.degree(n)*6 for n in G.nodes()],color="#00f5c4",line=dict(width=1.5,color="#0a0e1a")),
-                                text=list(G.nodes()),textposition="top center",textfont=dict(color="#e2e8f0",size=10),
-                                hovertext=[f"<b>{n}</b><br>Connections: {G.degree(n)}" for n in G.nodes()],hoverinfo="text"))
-                            fig.update_layout(plot_bgcolor="#0a0e1a",paper_bgcolor="#0a0e1a",height=450,showlegend=False,
-                                xaxis=dict(showgrid=False,zeroline=False,showticklabels=False),
-                                yaxis=dict(showgrid=False,zeroline=False,showticklabels=False),
-                                title=dict(text=f"{found_name} — PPI Network",font_color="#e2e8f0"),
-                                margin=dict(l=20,r=20,t=45,b=20))
-                            st.plotly_chart(fig,use_container_width=True)
-                            top_hubs = sorted(G.degree(),key=lambda x:x[1],reverse=True)[:5]
-                            hcols    = st.columns(5)
-                            for i,(gene,deg) in enumerate(top_hubs):
-                                with hcols[i]: st.markdown(f"<div class='metric-box'><div class='metric-value' style='font-size:1rem;color:#00f5c4;'>{gene}</div><div class='metric-label'>{deg} links</div></div>", unsafe_allow_html=True)
+                            fig.add_trace(go.Scatter(
+                                x=ex, y=ey, mode="lines",
+                                line=dict(width=1.5, color="#6366f1"),
+                                opacity=0.4, hoverinfo="none"
+                            ))
+                            fig.add_trace(go.Scatter(
+                                x=[pos[n][0] for n in G.nodes()],
+                                y=[pos[n][1] for n in G.nodes()],
+                                mode="markers+text",
+                                marker=dict(
+                                    size=[18+G.degree(n)*6 for n in G.nodes()],
+                                    color="#00f5c4",
+                                    line=dict(width=1.5, color="#0a0e1a")
+                                ),
+                                text=list(G.nodes()),
+                                textposition="top center",
+                                textfont=dict(color="#e2e8f0", size=10),
+                                hovertext=[f"<b>{n}</b><br>Connections: {G.degree(n)}" for n in G.nodes()],
+                                hoverinfo="text"
+                            ))
+                            fig.update_layout(
+                                plot_bgcolor="#0a0e1a", paper_bgcolor="#0a0e1a",
+                                height=450, showlegend=False,
+                                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                title=dict(text=f"{found_name} — PPI Network", font_color="#e2e8f0"),
+                                margin=dict(l=20, r=20, t=45, b=20)
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+
+                            top_hubs = sorted(G.degree(), key=lambda x: x[1], reverse=True)[:5]
+                            st.markdown('<div class="section-title">Hub Genes</div>', unsafe_allow_html=True)
+                            hcols = st.columns(5)
+                            for i, (gene, deg) in enumerate(top_hubs):
+                                with hcols[i]:
+                                    st.markdown(f"<div class='metric-box'><div class='metric-value' style='font-size:1rem;color:#00f5c4;'>{gene}</div><div class='metric-label'>{deg} links</div></div>", unsafe_allow_html=True)
                         else:
-                            st.info("No interactions found")
+                            st.info("No interactions found for these genes")
+
                     with tab2:
                         gdf = pd.DataFrame(genes)
-                        gdf.columns = ["Symbol","Name","OT Score"]
-                        st.dataframe(gdf.style.background_gradient(subset=["OT Score"],cmap="YlOrRd"),use_container_width=True,height=400)
+                        gdf.columns = ["Symbol", "Name", "OT Score"]
+                        st.dataframe(
+                            gdf.style.background_gradient(subset=["OT Score"], cmap="YlOrRd"),
+                            use_container_width=True, height=400
+                        )
                 else:
-                    st.error("No genes found above score threshold")
+                    st.warning("No genes found above score threshold")
 
 # ══════════════════════════════════════════════════
 # PIPELINE
