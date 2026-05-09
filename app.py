@@ -126,13 +126,28 @@ div[data-testid="stRadio"] label:hover {
     background: #1a2235 !important;
     color: #e2e8f0 !important;
 }
+div[data-testid="stRadio"] > div { gap: 4px !important; }
+div[data-testid="stRadio"] label {
+    background: transparent;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    color: #cbd5e1 !important;
+    font-size: 0.92rem !important;
+    border: 1px solid transparent !important;
+    width: 100% !important;
+    font-weight: 500 !important;
+}
+div[data-testid="stRadio"] label:hover {
+    background: #1a2235 !important;
+    color: #ffffff !important;
+    border-color: rgba(255,255,255,0.1) !important;
+}
 div[data-testid="stRadio"] label:has(input:checked) {
     background: #1a2235 !important;
-    color: #00f5c4 !important;
-    border-color: #00f5c4 !important;
-    font-weight: 600 !important;
+    color: #ffffff !important;
+    border-left: 3px solid #00f5c4 !important;
+    font-weight: 700 !important;
 }
-
 </style>
 """, unsafe_allow_html=True)
 # ── Data loading ───────────────────────────────────
