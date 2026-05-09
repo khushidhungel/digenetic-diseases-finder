@@ -8,7 +8,7 @@ import networkx as nx
 import os
 import plotly.graph_objects as go
 import plotly.express as px
-
+import requests
 st.set_page_config(
     page_title="BBS Digenic Explorer",
     page_icon="🧬",
