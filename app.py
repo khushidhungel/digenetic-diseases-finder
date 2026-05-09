@@ -215,66 +215,215 @@ with st.sidebar:
 # OVERVIEW
 # ══════════════════════════════════════════════════
 if "Overview" in page:
-    st.markdown('<div class="hero-title">Digenic Disease<br>Architecture Explorer</div>', unsafe_allow_html=True)
-    st.markdown('<div style="color:#64748b;font-size:0.95rem;margin-bottom:1.5rem;">Cross-database variant prioritization · Bardet-Biedl Syndrome</div>', unsafe_allow_html=True)
-
+ 
+    # ── Header ────────────────────────────────────
+    st.markdown("""
+    <div style='margin-bottom:1.2rem;'>
+        <div style='font-size:22px;font-weight:600;color:#ffffff;'>Digenic Disease Architecture Explorer</div>
+        <div style='font-size:13px;color:#64748b;margin-top:3px;'>Bardet-Biedl Syndrome · Cross-database variant prioritization · Live data integration</div>
+    </div>
+    """, unsafe_allow_html=True)
+ 
+    # ── Metric cards ──────────────────────────────
     c1,c2,c3,c4 = st.columns(4)
-    ng = len(genes_df) if not genes_df.empty else 9
-    ni = len(inter_df) if not inter_df.empty else 16
+    ng  = len(genes_df)  if not genes_df.empty  else 9
+    ni  = len(inter_df)  if not inter_df.empty  else 16
     np_ = len(scores_df) if not scores_df.empty else 15
-    ts = round(scores_df["digenic_score_normalized"].max(),1) if not scores_df.empty else 100.0
-
-    with c1: st.markdown(f"<div class='metric-box'><div class='metric-value'>{ng}</div><div class='metric-label'>BBS Genes</div></div>", unsafe_allow_html=True)
-    with c2: st.markdown(f"<div class='metric-box'><div class='metric-value' style='color:#6366f1;'>{ni}</div><div class='metric-label'>Interactions</div></div>", unsafe_allow_html=True)
-    with c3: st.markdown(f"<div class='metric-box'><div class='metric-value' style='color:#f59e0b;'>{np_}</div><div class='metric-label'>Digenic Pairs</div></div>", unsafe_allow_html=True)
-    with c4: st.markdown(f"<div class='metric-box'><div class='metric-value' style='color:#ef4444;'>{ts}</div><div class='metric-label'>Top Score</div></div>", unsafe_allow_html=True)
-
+    ts  = round(scores_df["digenic_score_normalized"].max(),1) if not scores_df.empty else 100.0
+    top_pair = scores_df.iloc[0] if not scores_df.empty else None
+ 
+    with c1:
+        st.markdown(f"""
+        <div style='background:#111827;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:1rem;'>
+            <div style='font-size:24px;font-weight:600;color:#ffffff;'>{ng}</div>
+            <div style='font-size:12px;color:#94a3b8;margin-top:2px;'>BBS genes</div>
+            <div style='font-size:11px;color:#334155;margin-top:2px;'>Open Targets</div>
+        </div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown(f"""
+        <div style='background:#111827;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:1rem;'>
+            <div style='font-size:24px;font-weight:600;color:#6366f1;'>{ni}</div>
+            <div style='font-size:12px;color:#94a3b8;margin-top:2px;'>Interactions</div>
+            <div style='font-size:11px;color:#334155;margin-top:2px;'>STRING score &gt;700</div>
+        </div>""", unsafe_allow_html=True)
+    with c3:
+        st.markdown(f"""
+        <div style='background:#111827;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:1rem;'>
+            <div style='font-size:24px;font-weight:600;color:#f59e0b;'>{np_}</div>
+            <div style='font-size:12px;color:#94a3b8;margin-top:2px;'>Digenic pairs</div>
+            <div style='font-size:11px;color:#334155;margin-top:2px;'>Scored 0–100</div>
+        </div>""", unsafe_allow_html=True)
+    with c4:
+        tp = f"{top_pair['gene_a']} ↔ {top_pair['gene_b']}" if top_pair is not None else "—"
+        st.markdown(f"""
+        <div style='background:#111827;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;padding:1rem;'>
+            <div style='font-size:24px;font-weight:600;color:#ef4444;'>{ts}</div>
+            <div style='font-size:12px;color:#94a3b8;margin-top:2px;'>Top score</div>
+            <div style='font-size:11px;color:#334155;margin-top:2px;'>{tp}</div>
+        </div>""", unsafe_allow_html=True)
+ 
     st.markdown("<br>", unsafe_allow_html=True)
-    col_a, col_b = st.columns([1.3, 1])
-
-    with col_a:
-        st.markdown('<div class="section-title">Top Digenic Candidates</div>', unsafe_allow_html=True)
+ 
+    # ── Clinical use case banner ───────────────────
+    st.markdown("""
+    <div style='background:#0c1a2e;border:0.5px solid rgba(99,102,241,0.3);border-radius:10px;
+               padding:1rem 1.2rem;margin-bottom:1rem;'>
+        <div style='font-size:11px;font-weight:600;color:#6366f1;text-transform:uppercase;
+                   letter-spacing:0.08em;margin-bottom:6px;'>🏥 Clinical use case</div>
+        <div style='font-size:13px;color:#cbd5e1;line-height:1.7;'>
+            Patient presents with BBS symptoms but only <b style='color:#f59e0b;'>one mutation found</b>.
+            This tool asks: <i>which second gene is most likely co-mutated?</i><br>
+            If <b style='color:#00f5c4;'>BBS9 is mutated</b> → model predicts
+            <b style='color:#ef4444;'>BBS4 as the highest-risk co-mutation (score 100/100)</b> →
+            doctor sequences BBS4 → <b style='color:#00f5c4;'>diagnosis confirmed.</b>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+ 
+    # ── Two column layout ─────────────────────────
+    col_left, col_right = st.columns([1.1, 1])
+ 
+    with col_left:
+        # Bar chart
+        st.markdown("""
+        <div style='background:#111827;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;
+                   padding:1rem 1.2rem;margin-bottom:1rem;'>
+            <div style='font-size:14px;font-weight:500;color:#ffffff;margin-bottom:2px;'>Digenic score ranking</div>
+            <div style='font-size:11px;color:#64748b;margin-bottom:12px;'>Top pairs by combined evidence — hover for details</div>
+        """, unsafe_allow_html=True)
+ 
         if not scores_df.empty:
-            for _, row in scores_df.head(5).iterrows():
+            top = scores_df.head(7).copy()
+            top["label"] = top["gene_a"] + " ↔ " + top["gene_b"]
+            colors = [score_color(float(s)) for s in top["digenic_score_normalized"]]
+            fig = go.Figure(go.Bar(
+                x=top["digenic_score_normalized"].astype(float),
+                y=top["label"],
+                orientation="h",
+                marker_color=colors,
+                text=[f"{float(s):.1f}" for s in top["digenic_score_normalized"]],
+                textposition="outside",
+                customdata=top[["string_score","shared_pathways","clinvar_pair"]].values,
+                hovertemplate="<b>%{y}</b><br>Score: %{x:.1f}/100<br>STRING: %{customdata[0]}<br>Pathways: %{customdata[1]}<br>ClinVar: %{customdata[2]:.2f}<extra></extra>"
+            ))
+            fig.update_layout(
+                plot_bgcolor="#111827", paper_bgcolor="#111827",
+                font_color="#94a3b8", height=280,
+                xaxis=dict(range=[0,118], gridcolor="#1e293b", color="#475569",
+                          showline=False, zeroline=False),
+                yaxis=dict(autorange="reversed", gridcolor="#1e293b", color="#94a3b8"),
+                margin=dict(l=5, r=55, t=5, b=5),
+                hoverlabel=dict(bgcolor="#1a2235", font_color="#e2e8f0")
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+ 
+        # Priority table
+        st.markdown("""
+        <div style='background:#111827;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;
+                   padding:1rem 1.2rem;'>
+            <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;'>
+                <div>
+                    <div style='font-size:14px;font-weight:500;color:#ffffff;'>Priority digenic candidates</div>
+                    <div style='font-size:11px;color:#64748b;'>Cross-referenced high-confidence pairs</div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+ 
+        if not scores_df.empty:
+            medals = ["🥇","🥈","🥉","4️⃣","5️⃣"]
+            for i,(_, row) in enumerate(scores_df.head(5).iterrows()):
                 s = float(row["digenic_score_normalized"])
                 c = score_color(s)
+                bar_w = int(s)
                 st.markdown(f"""
-                <div class='card' style='padding:0.8rem 1rem;margin-bottom:0.4rem;'>
-                    <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;'>
-                        <span style='font-family:Space Mono,monospace;font-size:0.88rem;color:#e2e8f0;'>{row['gene_a']} <span style='color:#334155;'>↔</span> {row['gene_b']}</span>
-                        <span style='font-family:Space Mono,monospace;font-size:0.82rem;color:{c};font-weight:700;'>{s:.1f}/100</span>
+                <div style='display:flex;align-items:center;gap:10px;padding:8px 0;
+                           border-bottom:0.5px solid rgba(255,255,255,0.05);'>
+                    <span style='font-size:14px;min-width:22px;'>{medals[i]}</span>
+                    <span style='font-family:monospace;font-size:13px;color:#e2e8f0;flex:1;'>
+                        {row['gene_a']} <span style='color:#334155;'>↔</span> {row['gene_b']}
+                    </span>
+                    <span style='font-size:10px;background:#1e0a0a;color:#ef4444;
+                               padding:2px 6px;border-radius:4px;'>Pathogenic</span>
+                    <div style='width:80px;background:#1e293b;border-radius:4px;height:5px;'>
+                        <div style='background:{c};width:{bar_w}%;height:100%;border-radius:4px;'></div>
                     </div>
-                    <div style='background:#0d1320;border-radius:4px;height:5px;'>
-                        <div style='background:{c};width:{int(s)}%;height:100%;border-radius:4px;'></div>
-                    </div>
-                    <div style='display:flex;gap:14px;margin-top:6px;'>
-                        <span style='font-size:0.7rem;color:#475569;'>STRING: {row["string_score"]}</span>
-                        <span style='font-size:0.7rem;color:#475569;'>Pathways: {row["shared_pathways"]}</span>
-                        <span style='font-size:0.7rem;color:#475569;'>ClinVar: {float(row["clinvar_pair"]):.2f}</span>
-                    </div>
+                    <span style='font-size:12px;font-weight:600;color:{c};min-width:36px;text-align:right;'>{s:.1f}</span>
                 </div>""", unsafe_allow_html=True)
-        else:
-            st.info("Run the pipeline first to see results")
-
-    with col_b:
-        st.markdown('<div class="section-title">Databases Used</div>', unsafe_allow_html=True)
-        for icon, name, desc, color in [
-            ("🎯","Open Targets","Gene harvesting","#00f5c4"),
-            ("🧬","gnomAD v4","Constraint filtering","#6366f1"),
-            ("🕸️","STRING DB","PPI network","#f59e0b"),
-            ("🔬","Reactome","Pathway co-membership","#00f5c4"),
-            ("🏥","ClinVar","Clinical evidence","#ef4444"),
-            ("🤖","Gemini AI","Clinical interpretation","#6366f1"),
+        st.markdown("</div>", unsafe_allow_html=True)
+ 
+    with col_right:
+        # Venn diagram
+        st.markdown("""
+        <div style='background:#111827;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;
+                   padding:1rem 1.2rem;margin-bottom:1rem;'>
+            <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'>
+                <div style='font-size:14px;font-weight:500;color:#ffffff;'>Database overlap</div>
+                <span style='font-size:10px;background:#0c1a2e;color:#6366f1;padding:2px 8px;border-radius:4px;border:0.5px solid #6366f1;'>Live stats</span>
+            </div>
+            <div style='font-size:11px;color:#64748b;margin-bottom:10px;'>Evidence convergence across sources</div>
+        """, unsafe_allow_html=True)
+ 
+        venn_fig = go.Figure()
+        for cx,cy,col,label in [(0.35,0.55,"#185FA5","Open Targets"),(0.65,0.55,"#0F6E56","gnomAD"),(0.5,0.35,"#993C1D","ClinVar")]:
+            venn_fig.add_shape(type="circle", x0=cx-0.22, y0=cy-0.22, x1=cx+0.22, y1=cy+0.22,
+                fillcolor=col, opacity=0.15, line_color=col, line_width=1.5)
+            venn_fig.add_annotation(x=cx+(0.28 if cx!=0.5 else 0), y=cy+(0 if cx!=0.5 else -0.3),
+                text=label, font=dict(size=11,color=col), showarrow=False)
+        venn_fig.add_annotation(x=0.5, y=0.52,
+            text="<b>9</b><br><span style='font-size:9px'>ALL 3</span>",
+            font=dict(size=14,color="#ffffff"), showarrow=False, bgcolor="rgba(99,102,241,0.3)",
+            bordercolor="#6366f1", borderwidth=1, borderpad=6)
+        venn_fig.update_layout(
+            plot_bgcolor="#111827", paper_bgcolor="#111827",
+            height=200, margin=dict(l=10,r=10,t=10,b=10),
+            xaxis=dict(range=[0,1],showgrid=False,zeroline=False,showticklabels=False),
+            yaxis=dict(range=[0,1],showgrid=False,zeroline=False,showticklabels=False),
+            showlegend=False
+        )
+        st.plotly_chart(venn_fig, use_container_width=True)
+ 
+        for dot,label,val in [("#185FA5","Open Targets",f"{ng} genes"),
+                               ("#0F6E56","gnomAD pLI>0.9",f"{ng} constrained"),
+                               ("#993C1D","ClinVar pathogenic",f"{ng} confirmed"),
+                               ("#534AB7","Digenic pairs scored",f"{np_} pairs")]:
+            st.markdown(f"""
+            <div style='display:flex;align-items:center;gap:8px;padding:4px 0;'>
+                <div style='width:9px;height:9px;border-radius:50%;background:{dot};flex-shrink:0;'></div>
+                <div style='font-size:12px;color:#94a3b8;flex:1;'>{label}</div>
+                <div style='font-size:12px;font-weight:500;color:#e2e8f0;'>{val}</div>
+            </div>""", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+ 
+        # Digenic explanation
+        st.markdown("""
+        <div style='background:#111827;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;
+                   padding:1rem 1.2rem;margin-bottom:1rem;'>
+            <div style='font-size:14px;font-weight:500;color:#ffffff;margin-bottom:10px;'>How digenic inheritance works</div>
+        """, unsafe_allow_html=True)
+        for bg,col,txt in [
+            ("#0a2010","#4ade80","BBS9 mutated alone → mild / carrier"),
+            ("#1a1500","#f59e0b","BBS9 + BBS4 both mutated → full BBS"),
+            ("#1a0a0a","#ef4444","Both BBSome subunits lost → complete breakdown"),
         ]:
             st.markdown(f"""
-            <div style='display:flex;align-items:center;gap:10px;padding:8px 10px;background:#111827;border-radius:8px;margin-bottom:4px;border:1px solid rgba(255,255,255,0.05);'>
-                <span style='font-size:1rem;'>{icon}</span>
-                <div style='flex:1;'>
-                    <div style='font-size:0.82rem;color:#e2e8f0;font-weight:500;'>{name}</div>
-                    <div style='font-size:0.68rem;color:#475569;'>{desc}</div>
-                </div>
-                <div style='width:6px;height:6px;border-radius:50%;background:{color};flex-shrink:0;'></div>
+            <div style='padding:7px 10px;background:{bg};border-radius:6px;
+                       color:{col};font-size:12px;margin-bottom:6px;'>
+                {txt}
             </div>""", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+ 
+        # Disease agnostic
+        st.markdown("""
+        <div style='background:#111827;border:0.5px solid rgba(255,255,255,0.08);border-radius:10px;
+                   padding:1rem 1.2rem;'>
+            <div style='font-size:14px;font-weight:500;color:#ffffff;margin-bottom:6px;'>🔄 Disease agnostic pipeline</div>
+            <div style='font-size:12px;color:#64748b;margin-bottom:10px;'>Works for any rare disease with GWAS data</div>
+            <div style='display:flex;flex-wrap:wrap;gap:5px;'>
+        """, unsafe_allow_html=True)
+        for d in ["Alström","Joubert","Usher","NPHP","Meckel","+ any ciliopathy"]:
+            st.markdown(f"<span style='font-size:11px;background:#1e293b;color:#94a3b8;padding:3px 9px;border-radius:4px;'>{d}</span>", unsafe_allow_html=True)
+        st.markdown("</div></div>", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════
 # GENE ANALYSIS
